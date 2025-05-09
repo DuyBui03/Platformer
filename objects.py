@@ -12,7 +12,6 @@ class Object(pygame.sprite.Sprite):
         self.height = height
         self.name = name
 
-
     def draw(self, win, offset_x):
         win.blit(self.image, (self.rect.x - offset_x, self.rect.y))
 
@@ -22,7 +21,6 @@ class Block(Object):
         block = get_block(size)
         self.image.blit(block, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)
-
 
 class Fire(Object):
     ANIMATION_DELAY = 3
@@ -42,8 +40,7 @@ class Fire(Object):
 
     def loop(self):
         sprites = self.fire[self.animation_name]
-        sprite_index = (self.animation_count //
-                        self.ANIMATION_DELAY) % len(sprites)
+        sprite_index = (self.animation_count // self.ANIMATION_DELAY) % len(sprites)
         self.image = sprites[sprite_index]
         self.animation_count += 1
 
@@ -52,3 +49,22 @@ class Fire(Object):
 
         if self.animation_count // self.ANIMATION_DELAY > len(sprites):
             self.animation_count = 0
+            
+class Fruits(Object):
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height, "fruit")
+        self.fruits = load_sprite_sheets("Items", "Fruits", width, height)
+        self.image = self.fruits["Apple"][0]  # Mặc định dùng Apple, có thể thay đổi
+        self.mask = pygame.mask.from_surface(self.image)
+        self.collected = False
+
+    def collect(self):
+        self.collected = True
+        self.image.fill((0, 0, 0, 0))  # Ẩn khi thu thập
+
+class Cup(Object):
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height, "cup")
+        cup_image = pygame.image.load("assets/Items/Checkpoints/End/End (Idle).png").convert_alpha()
+        self.image = pygame.transform.scale(cup_image, (width, height))
+        self.mask = pygame.mask.from_surface(self.image)
