@@ -3,6 +3,7 @@ from player import Player
 from level import Level
 from config import WIDTH, HEIGHT, FPS, PLAYER_VEL
 from sprites import get_background
+from window import show_menu, show_character_selection, show_death_menu    
 
 def draw(window, background, bg_image, player, objects, offset_x):
     for tile in background:
@@ -13,9 +14,12 @@ def draw(window, background, bg_image, player, objects, offset_x):
 
     player.draw(window, offset_x)
     
-    # Vẽ thanh HP
-    pygame.draw.rect(window, (255, 0, 0), (10, 10, 100, 10))  # Nền đỏ
-    pygame.draw.rect(window, (0, 255, 0), (10, 10, player.hp, 10))  # Thanh xanh theo HP
+    heart_image = pygame.image.load("./assets/Menu/Heart/heart.png")
+    heart_image = pygame.transform.scale(heart_image, (32, 32))
+    remaining_hearts = player.max_hits - player.fire_hit_count
+    for i in range(remaining_hearts):
+        window.blit(heart_image, (10 + i * 40, 10))
+
     pygame.display.update()
 
 def handle_vertical_collision(player, objects, dy):
@@ -57,24 +61,18 @@ def handle_move(player, objects):
 
     vertical_collide = handle_vertical_collision(player, objects, player.y_vel)
     to_check = [collide_left, collide_right, *vertical_collide]
+    
+    fire_collided = None
     for obj in to_check:
         if obj and obj.name == "fire":
-            player.take_damage(10)  # Giảm 10 HP khi va chạm với Fire
-
-def show_menu(window):
-    window.fill((0, 0, 0))
-    font = pygame.font.SysFont("arial", 50)
-    text = font.render("Press SPACE to Start", True, (255, 255, 255))
-    window.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
-    pygame.display.update()
-
-def show_game_over(window):
-    window.fill((0, 0, 0))
-    font = pygame.font.SysFont("arial", 50)
-    text = font.render("Game Over! Press R to Restart", True, (255, 255, 255))
-    window.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
-    pygame.display.update()
-
+            fire_collided = obj
+            break
+    if fire_collided and fire_collided != player.current_fire and not player.is_invincible:
+        player.take_damage()
+        player.current_fire = fire_collided
+    elif not fire_collided:
+        player.current_fire = None
+        
 def main():
     pygame.init()
     window = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -85,31 +83,54 @@ def main():
 
     level = Level(1)
     objects = level.get_objects()
-    player = Player(100, 100, 50, 50)
+    selected_character = "NinjaFrog"  # Mặc định
+    player = Player(100, 100, 50, 50, selected_character)
 
     offset_x = 0
     scroll_area_width = 200
     game_state = "menu"
-
+    
+    font = pygame.font.SysFont("arial", 50)
+    snapshot = None 
     run = True
     while run:
         clock.tick(FPS)
 
         if game_state == "menu":
-            show_menu(window)
+            buttons = show_menu(window, font)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        game_state = "playing"
-                        player = Player(100, 100, 50, 50)  # Reset player
-                        offset_x = 0
-                    if event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_META:
-                        run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for name, rect in buttons:
+                        if rect.collidepoint(pos):
+                            if name == "play":
+                                game_state = "character_select"
+                            elif name == "point":
+                                game_state = "score"
+                            elif name == "exit":
+                                run = False
+        elif game_state == "character_select":
+            font_char = pygame.font.SysFont("arial", 0)
+            buttons = show_character_selection(window, font_char)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for char, rect in buttons:
+                        if rect.collidepoint(pos):
+                            selected_character = char
+                            game_state = "playing"
+                            player = Player(100, 100, 50, 50, selected_character)
+                            level = Level(1)
+                            objects = level.get_objects()
+                            offset_x = 0
         elif game_state == "playing":
             if not player.alive:
                 game_state = "game_over"
+                snapshot = window.copy()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -132,19 +153,18 @@ def main():
                 (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
                 offset_x += player.x_vel
         elif game_state == "game_over":
-            show_game_over(window)
+            buttons_over = show_death_menu(window, font, 100, snapshot)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        game_state = "playing"
-                        player = Player(100, 100, 50, 50)  # Reset player
-                        offset_x = 0
-                    if event.key == pygame.K_ESCAPE:
-                        game_state = "menu"
-                    if event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_META:
-                        run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for name, rect in buttons_over:
+                        if rect.collidepoint(pos):
+                            if name == "restart":
+                                game_state = "character_select"
+                            elif name == "exit":
+                                run = False
 
     pygame.quit()
     quit()

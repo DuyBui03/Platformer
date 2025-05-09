@@ -3,7 +3,7 @@ from sprites import load_sprite_sheets, flip
 from config import PLAYER_VEL, GRAVITY, ANIMATION_DELAY
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, character="NinjaFrog"):
         super().__init__()
         self.rect = pygame.Rect(x, y, width, height)
         self.x_vel = 0
@@ -15,11 +15,19 @@ class Player(pygame.sprite.Sprite):
         self.jump_count = 0
         self.hit = False
         self.hit_count = 0
-        self.hp = 100  # Khởi tạo HP
-        self.max_hp = 100  # HP tối đa
-        self.alive = True  # Trạng thái sống/thua
-
-        self.SPRITES = load_sprite_sheets("MainCharacters", "NinjaFrog", 32, 32, True)
+        self.fire_hit_count = 0
+        self.max_hits = 3
+        self.alive = True
+        self.last_damage_time = 0
+        self.damage_cooldown = 500
+        self.current_fire = None
+        self.is_invincible = False
+        self.invincibility_end_time = 0
+        self.flash_timer = 0
+        self.character = character
+        self.SPRITES = load_sprite_sheets("MainCharacters", self.character, 32, 32, True)
+        if not self.SPRITES:
+            raise ValueError(f"Failed to load sprites for character: {character}")
 
     def jump(self):
         if self.alive:
@@ -29,16 +37,20 @@ class Player(pygame.sprite.Sprite):
             if self.jump_count == 1:
                 self.fall_count = 0
 
-    def take_damage(self, damage):
-        """Giảm HP khi va chạm với chướng ngại vật."""
-        if self.alive:
-            self.hp = max(0, self.hp - damage)
+    def take_damage(self):
+        current_time = pygame.time.get_ticks()
+        if self.alive and not self.is_invincible and current_time - self.last_damage_time >= self.damage_cooldown:
+            self.fire_hit_count += 1
+            self.last_damage_time = current_time
+            self.is_invincible = True
+            self.invincibility_end_time = current_time + 3000
             self.make_hit()
-            if self.hp <= 0:
+            if self.fire_hit_count >= self.max_hits:
                 self.alive = False
 
     def make_hit(self):
-        self.hit = True
+        if not self.is_invincible:
+            self.hit = True
 
     def move(self, dx, dy):
         self.rect.x += dx
@@ -69,6 +81,14 @@ class Player(pygame.sprite.Sprite):
             self.hit = False
             self.hit_count = 0     
 
+        current_time = pygame.time.get_ticks()
+        if self.is_invincible and current_time >= self.invincibility_end_time:
+            self.is_invincible = False
+            self.flash_timer = 0
+
+        if self.is_invincible:
+            self.flash_timer += 1
+
         self.fall_count += 1
         self.update_sprite()
 
@@ -96,7 +116,7 @@ class Player(pygame.sprite.Sprite):
             sprite_sheet = "run"
 
         sprite_sheet_name = sprite_sheet + "_" + self.direction
-        sprites = self.SPRITES[sprite_sheet_name]
+        sprites = self.SPRITES.get(sprite_sheet_name, self.SPRITES["idle_right"])
         sprite_index = (self.animation_count // ANIMATION_DELAY) % len(sprites)
         self.sprite = sprites[sprite_index]
         self.animation_count += 1
@@ -107,4 +127,5 @@ class Player(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.sprite)
 
     def draw(self, win, offset_x):
-        win.blit(self.sprite, (self.rect.x - offset_x, self.rect.y))
+        if not self.is_invincible or (self.flash_timer % 6 < 3):
+            win.blit(self.sprite, (self.rect.x - offset_x, self.rect.y))
