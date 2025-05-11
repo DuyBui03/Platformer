@@ -1,11 +1,14 @@
 import pygame
-from player import Player
+from Classes.player import Player
+from Classes.objects import Trophy
 from level import Level
 from config import WIDTH, HEIGHT, FPS, PLAYER_VEL
 from sprites import get_background
-from window import show_menu, show_character_selection, show_death_menu    
+from window import show_menu, show_character_selection, show_death_menu
+from Functions.load import handle_move
 
 def draw(window, background, bg_image, player, objects, offset_x):
+    """Vẽ tất cả đối tượng lên màn hình."""
     for tile in background:
         window.blit(bg_image, tile)
     
@@ -22,57 +25,30 @@ def draw(window, background, bg_image, player, objects, offset_x):
 
     pygame.display.update()
 
-def handle_vertical_collision(player, objects, dy):
-    collided_objects = []
-    for obj in objects:
-        if pygame.sprite.collide_mask(player, obj):
-            if dy > 0:
-                player.rect.bottom = obj.rect.top
-                player.landed()
-                collided_objects.append(obj)
-            elif dy < 0:
-                player.rect.top = obj.rect.bottom
-                player.hit_head()
-                collided_objects.append(obj)
-    return collided_objects
+def show_win_menu(window, font, alpha, snapshot):
+    """Hiển thị màn hình chiến thắng."""
+    overlay = pygame.Surface((WIDTH, HEIGHT))
+    overlay.set_alpha(alpha)
+    window.blit(snapshot, (0, 0))
+    window.blit(overlay, (0, 0))
 
-def collide(player, objects, dx):
-    player.move(dx, 0)
-    player.update()
-    collided_object = None
-    for obj in objects:
-        if pygame.sprite.collide_mask(player, obj):
-            collided_object = obj
-            break
-    player.move(-dx, 0)
-    player.update()
-    return collided_object
+    win_text = font.render("You Win!", True, (255, 255, 255))
+    win_rect = win_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+    window.blit(win_text, win_rect)
 
-def handle_move(player, objects):
-    keys = pygame.key.get_pressed()
-    player.x_vel = 0
-    collide_left = collide(player, objects, -PLAYER_VEL * 2)
-    collide_right = collide(player, objects, PLAYER_VEL * 2)
+    buttons = [
+        ("restart", pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)),
+        ("exit", pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50))
+    ]
+    for name, rect in buttons:
+        pygame.draw.rect(window, (100, 100, 100), rect)
+        text = font.render(name.capitalize(), True, (255, 255, 255))
+        text_rect = text.get_rect(center=rect.center)
+        window.blit(text, text_rect)
 
-    if keys[pygame.K_LEFT] and not collide_left:
-        player.move_left(PLAYER_VEL)
-    if keys[pygame.K_RIGHT] and not collide_right:
-        player.move_right(PLAYER_VEL)
+    pygame.display.update()
+    return buttons
 
-    vertical_collide = handle_vertical_collision(player, objects, player.y_vel)
-    to_check = [collide_left, collide_right, *vertical_collide]
-    
-    fire_collided = None
-    for obj in to_check:
-        if obj and obj.name == "fire":
-            fire_collided = obj
-            break
-    if fire_collided and fire_collided != player.current_fire and not player.is_invincible:
-        player.take_damage()
-        player.current_fire = fire_collided
-    elif not fire_collided:
-        player.current_fire = None
-        
 def main():
     pygame.init()
     window = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -88,6 +64,7 @@ def main():
 
     offset_x = 0
     scroll_area_width = 200
+    level_width = WIDTH * 6  # Giả định level rộng gấp 6 lần màn hình
     game_state = "menu"
     
     font = pygame.font.SysFont("arial", 50)
@@ -112,7 +89,7 @@ def main():
                             elif name == "exit":
                                 run = False
         elif game_state == "character_select":
-            font_char = pygame.font.SysFont("arial", 0)
+            font_char = pygame.font.SysFont("arial", 30)
             buttons = show_character_selection(window, font_char)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -145,13 +122,32 @@ def main():
             player.loop(FPS)
             for obj in objects:
                 if hasattr(obj, "loop"):
-                    obj.loop()
+                    try:
+                        obj.loop(objects)
+                    except TypeError:
+                        obj.loop()
+
             handle_move(player, objects)
+
+            # Kiểm tra va chạm với Trophy
+            for obj in objects:
+                if isinstance(obj, Trophy):
+                    # Use obj.rect directly, adjusted for camera offset
+                    trophy_rect = obj.rect.move(-offset_x, 0)
+                    if player.rect.colliderect(trophy_rect):
+                        game_state = "win"
+                        snapshot = window.copy()
+                        break
+
             draw(window, background, bg_image, player, objects, offset_x)
 
+            # Cập nhật camera
             if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
                 (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
                 offset_x += player.x_vel
+                # Giới hạn camera
+                offset_x = max(-level_width // 2, min(offset_x, level_width // 2 - WIDTH))
+
         elif game_state == "game_over":
             buttons_over = show_death_menu(window, font, 100, snapshot)
             for event in pygame.event.get():
@@ -160,6 +156,19 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     pos = event.pos
                     for name, rect in buttons_over:
+                        if rect.collidepoint(pos):
+                            if name == "restart":
+                                game_state = "character_select"
+                            elif name == "exit":
+                                run = False
+        elif game_state == "win":
+            buttons_win = show_win_menu(window, font, 100, snapshot)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for name, rect in buttons_win:
                         if rect.collidepoint(pos):
                             if name == "restart":
                                 game_state = "character_select"

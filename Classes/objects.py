@@ -1,7 +1,7 @@
 # game_objects.py
 
 import pygame
-from sprites import get_block, load_sprite_sheets
+from sprites import get_block, load_sprite_sheets, get_platform
 
 class Object(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, name=None):
@@ -20,6 +20,13 @@ class Block(Object):
         super().__init__(x, y, size, size)
         block = get_block(size)
         self.image.blit(block, (0, 0))
+        self.mask = pygame.mask.from_surface(self.image)
+
+class Platform(Object):
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height)
+        platform = get_platform(width, height)
+        self.image.blit(platform, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)
 
 class Fire(Object):
@@ -50,21 +57,15 @@ class Fire(Object):
         if self.animation_count // self.ANIMATION_DELAY > len(sprites):
             self.animation_count = 0
             
-class Fruits(Object):
+class Trophy(Object):
     def __init__(self, x, y, width, height):
-        super().__init__(x, y, width, height, "fruit")
-        self.fruits = load_sprite_sheets("Items", "Fruits", width, height)
-        self.image = self.fruits["Apple"][0]  # Mặc định dùng Apple, có thể thay đổi
+        super().__init__(x, y, width, height, 'trophy')
+        self.image = pygame.image.load('assets/Items/Checkpoints/End/End (Idle).png')
         self.mask = pygame.mask.from_surface(self.image)
-        self.collected = False
 
-    def collect(self):
-        self.collected = True
-        self.image.fill((0, 0, 0, 0))  # Ẩn khi thu thập
-
-class Cup(Object):
-    def __init__(self, x, y, width, height):
-        super().__init__(x, y, width, height, "cup")
-        cup_image = pygame.image.load("assets/Items/Checkpoints/End/End (Idle).png").convert_alpha()
-        self.image = pygame.transform.scale(cup_image, (width, height))
+class Fruit(Object):
+    def __init__(self, x, y, width, height, fruit_type):
+        super().__init__(x, y, width, height, 'fruit')
+        self.fruit = load_sprite_sheets('Items', 'Fruits', width, height)
+        self.image = self.fruit[fruit_type][0]
         self.mask = pygame.mask.from_surface(self.image)
