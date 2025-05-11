@@ -10,3 +10,5 @@ ANIMATION_DELAY = 3
 
 block_size = 96
 platform_size = (128, 16)  # Kích thước gốc của platform (rộng, cao)
+# volume = 0.5
+# is_dragging = False

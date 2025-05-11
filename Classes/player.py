@@ -26,6 +26,7 @@ class Player(pygame.sprite.Sprite):
         self.flash_timer = 0
         self.character = character
         self.SPRITES = load_sprite_sheets("MainCharacters", self.character, 32, 32, True)
+        self.score = 0
         if not self.SPRITES:
             raise ValueError(f"Failed to load sprites for character: {character}")
 

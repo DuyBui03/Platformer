@@ -53,3 +53,11 @@ def get_platform(width, height):
     rect = pygame.Rect(256, 0, width, height)  # Kiểm tra lại tọa độ trong Terrain.png
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
+
+def get_font(size):
+    return pygame.font.Font("assets/font.ttf", size)
+
+def play_sound_effect(sound, is_muted):
+    """Play a sound effect if not muted."""
+    if sound and not is_muted:
+        sound.play()

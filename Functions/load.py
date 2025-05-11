@@ -47,9 +47,14 @@ def handle_move(player, objects):
         if obj and obj.name == "fire":
             fire_collided = obj
             break
+        if obj and obj.name == "fruit":
+            player.score += 100
+            objects.remove(obj)
+            break
     if fire_collided and fire_collided != player.current_fire and not player.is_invincible:
         player.take_damage()
         player.current_fire = fire_collided
     elif not fire_collided:
         player.current_fire = None
+    
        
