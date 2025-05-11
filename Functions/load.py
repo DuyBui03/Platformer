@@ -1,5 +1,5 @@
 import pygame
-from config import PLAYER_VEL, GRAVITY
+from config import PLAYER_VEL
 from sprites import load_sprite_sheets
 
 def handle_vertical_collision(player, objects, dy):

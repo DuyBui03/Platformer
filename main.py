@@ -2,11 +2,10 @@ import pygame
 from Classes.player import Player
 from Classes.objects import Trophy
 from level import Level
-from config import WIDTH, HEIGHT, FPS, PLAYER_VEL
+from config import WIDTH, HEIGHT, FPS
 from sprites import get_background, get_font
 from window import show_menu, show_character_selection, show_death_menu
 from Functions.load import handle_move
-from Classes.menu import TextButton
 from Functions.button import GameButton
 from Classes.audioManager import AudioManager
 
@@ -48,7 +47,7 @@ def draw(window, background, bg_image, player, objects, offset_x, score_text, bu
     player.draw(window, offset_x)
     for button in buttons:
         button.draw(window)
-    window.blit(score_text, (750, 15))
+    window.blit(score_text, (150, 15)) 
     
     if heart_image:
         remaining_hearts = player.max_hits - player.fire_hit_count
@@ -96,7 +95,6 @@ def main():
     offset_x = 0
     # offset_y = 0
     scroll_area_width = 200
-    level_width = WIDTH * 6  # Giả định level rộng gấp 6 lần màn hình
     game_state = "menu"
     
     font = pygame.font.SysFont("arial", 50)
@@ -105,7 +103,6 @@ def main():
     pause_key_pressed = False
     is_paused = False 
 
-    # Khởi tạo AudioManager
     audio = AudioManager()
 
     # Load heart image
@@ -122,7 +119,10 @@ def main():
         sound_on_img = pygame.transform.scale(sound_on_img, (32, 32))
         sound_off_img = pygame.image.load("assets/Menu/Buttons/mute.png")
         sound_off_img = pygame.transform.scale(sound_off_img, (32, 32))
-        sound_button = GameButton(900, 5, sound_on_img, 1)
+        sound_button = GameButton(WIDTH - 80, 5, sound_on_img, 1) 
+        settings_img = pygame.image.load("assets/Menu/Buttons/Settings.png")
+        settings_img = pygame.transform.scale(settings_img, (32, 32))
+        settings_button = GameButton(WIDTH - 40, 5, settings_img, 1)
     except pygame.error as e:
         print(f"Lỗi khi load hình ảnh nút âm thanh: {e}")
         sound_button = None
@@ -131,7 +131,6 @@ def main():
         clock.tick(FPS)
         score_text = get_font(20).render(f'Score:{player.score}', True, "#d7fcd4")
         if game_state == "menu":
-            audio.pause_music()
             buttons = show_menu(window, font)
             if sound_button:
                 sound_button.draw(window)
@@ -165,7 +164,6 @@ def main():
                         sound_button.image = sound_off_img if audio.is_muted else sound_on_img
 
         elif game_state == "character_select":
-            audio.pause_music()
             font_char = pygame.font.SysFont("arial", 30)
             buttons = show_character_selection(window, font_char)
             for event in pygame.event.get():
@@ -212,7 +210,8 @@ def main():
                     if sound_button and sound_button.draw(window):
                         audio.toggle_mute()
                         sound_button.image = sound_off_img if audio.is_muted else sound_on_img
-
+                    if settings_button and settings_button.draw(window):
+                        print("Settings button clicked!")
             if not is_paused:
                 player.loop(FPS)
                 for obj in objects:
@@ -246,7 +245,7 @@ def main():
                 #     offset_y += player.y_vel  # Dịch thế giới lên (cuộn xuống)
                     # offset_x = max(0, min(offset_x, level_width - WIDTH))  # Giới hạn camera
 
-                buttons = [sound_button] if sound_button else []
+                buttons = [sound_button, settings_button] if sound_button and settings_button else []
                 draw(window, background, bg_image, player, objects, offset_x, score_text, buttons, heart_image)
             
             FINAL_SCORE = player.score
