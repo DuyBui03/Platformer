@@ -117,7 +117,7 @@ def show_character_selection(window, font):
     overlay.fill((20, 20, 40, 200))
     window.blit(overlay, (0, 0))
 
-    characters = ["NinjaFrog", "MaskDude", "PinkMan"]
+    characters = ["NinjaFrog", "MaskDude", "PinkMan", "KenCarson"]
     buttons = []
     char_width, char_height = 80, 80
     spacing = 50
