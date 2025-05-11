@@ -192,3 +192,5 @@ def show_death_menu(window, font, score, bg_snapshot):
 
     pygame.display.update()
     return buttons
+
+    
