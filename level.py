@@ -1,8 +1,7 @@
 from Classes.objects import Fire
-from config import HEIGHT, block_size
 from Level.lv1 import create_objects
 from Level.lv2 import create_objects_lv2
-
+from Level.lv3 import create_objects_lv3
 class Level:
     def __init__(self, level_id):
         self.level_id = level_id
@@ -15,6 +14,8 @@ class Level:
                 return create_objects()
             elif self.level_id == 2:
                 return create_objects_lv2()
+            elif self.level_id == 3:
+                return create_objects_lv3()
             else:
                 raise ValueError(f"Level {self.level_id} not implemented")
         except Exception as e:
