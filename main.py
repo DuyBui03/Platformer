@@ -87,10 +87,10 @@ def main():
     clock = pygame.time.Clock()
     background, bg_image = get_background("Green.png")
 
-    level = Level(2)
+    level = Level(1)
     objects = level.get_objects()
     selected_character = "NinjaFrog"
-    player = Player(100, 100, 50, 50, selected_character)
+    player = Player(1000, 300, 0, 0, selected_character) 
 
     offset_x = 0
     # offset_y = 0
@@ -176,7 +176,7 @@ def main():
                             selected_character = char
                             game_state = "playing"
                             player = Player(100, 100, 50, 50, selected_character)
-                            level = Level(2)
+                            level = Level(1)
                             objects = level.get_objects()
                             offset_x = 0
                             audio.unpause_music()
