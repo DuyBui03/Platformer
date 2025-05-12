@@ -3,7 +3,7 @@ from Classes.objects import Block, Platform, Fire, Trophy, Fruit
 from Classes.enemy import Slime
 
 def create_objects():
-    with open('/Users/duybui/Desktop/Platformer/Level/level1.json', 'r') as f:
+    with open(r'C:\Users\longc\project\Platformer\Level\level1.json', 'r') as f:
         data = json.load(f)
     
     objects = []
@@ -29,7 +29,9 @@ def create_objects():
         y = fire_data['y']
         width = fire_data['width'] // 2
         height = fire_data['height'] // 2
-        objects.append(Fire(x, y, width, height))
+        fire = Fire(x, y, width, height)  # Lưu đối tượng Fire vào biến
+        fire.on()
+        objects.append(fire)
     
     # Create Slime (Enemy) objects
     for enemy_data in data['enemies']:
