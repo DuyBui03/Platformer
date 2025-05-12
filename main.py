@@ -62,9 +62,11 @@ def main():
     high_scores = load_high_scores()
     background, bg_image = get_background("Green.png")
 
+    selected_level = 1
+    level = Level(selected_level)
     objects = level.get_objects()
     selected_character = "NinjaFrog"
-    player = Player(1000, 300, 0, 0, selected_character) 
+    player = Player(100, 100, 50, 50, selected_character)
 
     offset_x = 0
     scroll_area_width = 200
@@ -166,6 +168,7 @@ def main():
                             selected_character = char
                             game_state = "playing"
                             player = Player(100, 100, 50, 50, selected_character)
+                            level = Level(selected_level)  # Use selected level
                             objects = level.get_objects()
                             offset_x = 0
                             audio.unpause_music()
