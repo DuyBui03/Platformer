@@ -1,41 +1,38 @@
+import json
+import os
 import pygame
 from Classes.player import Player
-from Classes.objects import Trophy
+from Classes.objects import Trophy, Fruit
 from level import Level
 from config import WIDTH, HEIGHT, FPS
 from sprites import get_background, get_font
-from window import show_menu, show_character_selection, show_death_menu
+from window import show_menu, show_character_selection, show_level_selection, show_death_menu, show_settings, show_high_scores, show_win_menu
 from Functions.load import handle_move
 from Functions.button import GameButton
 from Classes.audioManager import AudioManager
 
-# Khởi tạo pygame mixer
 pygame.mixer.init()
 pygame.font.init()
 
-def game_over(window, win, score):
-    run = True
-    while run:
-        if not win:
-            window.fill("BLACK")
-            menu_text = get_font(55).render("GAME OVER", True, "#d7fcd4")
-            menu_rect = menu_text.get_rect(center=(500, 100))
-            score_text = get_font(50).render(f'FINAL SCORE: {score}', True, "#d7fcd4")
-            score_rect = score_text.get_rect(center=(500, 200))
-            
-            window.blit(menu_text, menu_rect)
-            window.blit(score_text, score_rect)
-            pygame.display.update()
+def load_high_scores():
+    """Load high scores from a JSON file, return a dictionary."""
+    try:
+        if os.path.exists("high_scores.json"):
+            with open("high_scores.json", "r") as f:
+                return json.load(f)
         else:
-            window.fill("BLACK")
-            menu_text = get_font(55).render("YOU WIN!", True, "#d7fcd4")
-            menu_rect = menu_text.get_rect(center=(500, 100))
-            score_text = get_font(50).render(f'FINAL SCORE: {score}', True, "#d7fcd4")
-            score_rect = score_text.get_rect(center=(500, 250))
-            
-            window.blit(menu_text, menu_rect)
-            window.blit(score_text, score_rect)
-            pygame.display.update()
+            return {"level_1": 0, "level_2": 0, "level_3": 0}
+    except Exception as e:
+        print(f"Error loading high scores: {e}")
+        return {"level_1": 0, "level_2": 0, "level_3": 0}
+
+def save_high_scores(high_scores):
+    """Save high scores to a JSON file."""
+    try:
+        with open("high_scores.json", "w") as f:
+            json.dump(high_scores, f, indent=4)
+    except Exception as e:
+        print(f"Error saving high scores: {e}")
 
 def draw(window, background, bg_image, player, objects, offset_x, score_text, buttons, heart_image):
     for tile in background:
@@ -56,44 +53,20 @@ def draw(window, background, bg_image, player, objects, offset_x, score_text, bu
 
     pygame.display.update()
 
-def show_win_menu(window, font, alpha, snapshot):
-    overlay = pygame.Surface((WIDTH, HEIGHT))
-    overlay.set_alpha(alpha)
-    window.blit(snapshot, (0, 0))
-    window.blit(overlay, (0, 0))
-
-    win_text = font.render("You Win!", True, (255, 255, 255))
-    win_rect = win_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
-    window.blit(win_text, win_rect)
-
-    buttons = [
-        ("restart", pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)),
-        ("exit", pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50))
-    ]
-    for name, rect in buttons:
-        pygame.draw.rect(window, (100, 100, 100), rect)
-        text = font.render(name.capitalize(), True, (255, 255, 255))
-        text_rect = text.get_rect(center=rect.center)
-        window.blit(text, text_rect)
-
-    pygame.display.update()
-    return buttons
-
 def main():
     FINAL_SCORE = 0
     window = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("PLATFORMER")
 
     clock = pygame.time.Clock()
+    high_scores = load_high_scores()
     background, bg_image = get_background("Green.png")
 
-    level = Level(1)
     objects = level.get_objects()
     selected_character = "NinjaFrog"
     player = Player(1000, 300, 0, 0, selected_character) 
 
     offset_x = 0
-    # offset_y = 0
     scroll_area_width = 200
     game_state = "menu"
     
@@ -105,7 +78,6 @@ def main():
 
     audio = AudioManager()
 
-    # Load heart image
     heart_image = None
     try:
         heart_image = pygame.image.load("./assets/Menu/Heart/heart.png")
@@ -113,7 +85,6 @@ def main():
     except pygame.error as e:
         print(f"Lỗi khi load hình ảnh heart: {e}")
 
-    # Nút mute/unmute
     try:
         sound_on_img = pygame.image.load("assets/Menu/Buttons/sound.png")
         sound_on_img = pygame.transform.scale(sound_on_img, (32, 32))
@@ -154,7 +125,7 @@ def main():
                     for name, rect in buttons:
                         if rect.collidepoint(pos):
                             if name == "play":
-                                game_state = "character_select"
+                                game_state = "level_select"
                             elif name == "point":
                                 game_state = "score"
                             elif name == "exit":
@@ -162,6 +133,25 @@ def main():
                     if sound_button and sound_button.draw(window):
                         audio.toggle_mute()
                         sound_button.image = sound_off_img if audio.is_muted else sound_on_img
+
+        elif game_state == "level_select":
+            font_level = pygame.font.SysFont("arial", 30)
+            buttons = show_level_selection(window, font_level)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for level_name, rect in buttons:
+                        if rect.collidepoint(pos):
+                            if level_name == "level 1":
+                                selected_level = 1
+                            elif level_name == "level 2":
+                                selected_level = 2
+                            elif level_name == "level 3":
+                                selected_level = 3
+                            game_state = "character_select"
+                            audio.unpause_music()
 
         elif game_state == "character_select":
             font_char = pygame.font.SysFont("arial", 30)
@@ -176,7 +166,6 @@ def main():
                             selected_character = char
                             game_state = "playing"
                             player = Player(100, 100, 50, 50, selected_character)
-                            level = Level(1)
                             objects = level.get_objects()
                             offset_x = 0
                             audio.unpause_music()
@@ -187,6 +176,11 @@ def main():
                 game_state = "game_over"
                 snapshot = window.copy()
                 audio.pause_music()
+                # Update high score
+                level_key = f"level_{selected_level}"
+                if player.score > high_scores.get(level_key, 0):
+                    high_scores[level_key] = player.score
+                    save_high_scores(high_scores)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -211,7 +205,9 @@ def main():
                         audio.toggle_mute()
                         sound_button.image = sound_off_img if audio.is_muted else sound_on_img
                     if settings_button and settings_button.draw(window):
-                        print("Settings button clicked!")
+                        snapshot = window.copy()
+                        game_state = "settings"
+                        
             if not is_paused:
                 player.loop(FPS)
                 for obj in objects:
@@ -223,27 +219,30 @@ def main():
 
                 handle_move(player, objects)
 
-                # Kiểm tra va chạm với Trophy
-                for obj in objects:
+                # Check collisions with Fruit and Trophy
+                for obj in objects[:]:
                     if isinstance(obj, Trophy):
                         trophy_rect = obj.rect.move(-offset_x, 0)
                         if player.rect.colliderect(trophy_rect):
                             game_state = "win"
                             snapshot = window.copy()
                             audio.pause_music()
+                            # Update high score
+                            level_key = f"level_{selected_level}"
+                            if player.score > high_scores.get(level_key, 0):
+                                high_scores[level_key] = player.score
+                                save_high_scores(high_scores)
                             break
+                    elif isinstance(obj, Fruit):
+                        fruit_rect = obj.rect.move(-offset_x, 0)
+                        if player.rect.colliderect(fruit_rect):
+                            player.score += 10
+                            objects.remove(obj)
 
-                # Cập nhật camera
+                # Update camera
                 if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
                     (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
                     offset_x += player.x_vel
-                
-                 # Cuộn theo trục y
-                # if ((player.rect.top - offset_y <= scroll_area_width) and player.y_vel < 0):  # Nhảy lên, gần rìa trên
-                #     offset_y += player.y_vel  # Dịch thế giới xuống (cuộn lên)
-                # elif ((player.rect.bottom - offset_y >= HEIGHT - scroll_area_width) and player.y_vel > 0):  # Rơi xuống, gần rìa dưới
-                #     offset_y += player.y_vel  # Dịch thế giới lên (cuộn xuống)
-                    # offset_x = max(0, min(offset_x, level_width - WIDTH))  # Giới hạn camera
 
                 buttons = [sound_button, settings_button] if sound_button and settings_button else []
                 draw(window, background, bg_image, player, objects, offset_x, score_text, buttons, heart_image)
@@ -253,10 +252,43 @@ def main():
                 game_state = "game_over"
                 snapshot = window.copy()
                 audio.pause_music()
+                # Update high score
+                level_key = f"level_{selected_level}"
+                if player.score > high_scores.get(level_key, 0):
+                    high_scores[level_key] = player.score
+                    save_high_scores(high_scores)
+
+        elif game_state == "settings":
+            buttons_settings = show_settings(window, font, snapshot)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for name, rect in buttons_settings:
+                        if rect.collidepoint(pos):
+                            if name == "continue":
+                                game_state = "playing"
+                                audio.unpause_music()
+                            elif name == "menu":
+                                game_state = "menu"
+
+        elif game_state == "score":
+            font_score = pygame.font.SysFont("arial", 20)
+            buttons = show_high_scores(window, font_score, high_scores)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for name, rect in buttons:
+                        if rect.collidepoint(pos):
+                            if name == "back":
+                                game_state = "menu"
 
         elif game_state == "game_over":
             audio.pause_music()
-            buttons_over = show_death_menu(window, font, 100, snapshot)
+            buttons_over = show_death_menu(window, font, FINAL_SCORE, snapshot)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -265,15 +297,14 @@ def main():
                     for name, rect in buttons_over:
                         if rect.collidepoint(pos):
                             if name == "restart":
-                                game_state = "character_select"
+                                game_state = "level_select"  # Return to level select
+                            elif name == "menu":
+                                game_state = "menu"
                             elif name == "exit":
                                 run = False
 
         elif game_state == "win":
-            audio_del = AudioManager()
             audio.pause_music()
-            buttons_win = show_win_menu(window, font, 100, snapshot)
-
             buttons_win = show_win_menu(window, font, 100, snapshot)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -283,7 +314,9 @@ def main():
                     for name, rect in buttons_win:
                         if rect.collidepoint(pos):
                             if name == "restart":
-                                game_state = "character_select"
+                                game_state = "level_select"  # Return to level select
+                            elif name == "menu":
+                                game_state = "menu"
                             elif name == "exit":
                                 run = False
 
