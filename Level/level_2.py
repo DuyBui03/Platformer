@@ -3,7 +3,7 @@ from Classes.objects import Block, Platform, Fire, Trophy, Fruit
 from Classes.enemy import Slime
 
 def create_objects():
-    with open(r'C:\Users\longc\project\Platformer\Level\JsonLevel\level1.json', 'r') as f:
+    with open(r'C:\Users\longc\project\Platformer\Level\JsonLevel\level_2.json', 'r') as f:
         data = json.load(f)
     
     objects = []

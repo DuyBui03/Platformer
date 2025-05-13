@@ -1,6 +1,5 @@
-from Classes.objects import Fire
 from Level.lv1 import create_objects
-
+from Level.level_2 import create_objects as create_objects_lv2
 class Level:
     def __init__(self, level_id):
         self.level_id = level_id
@@ -11,6 +10,8 @@ class Level:
         try:
             if self.level_id == 1:
                 return create_objects()
+            elif self.level_id == 2:
+                return create_objects_lv2()
             else:
                 raise ValueError(f"Level {self.level_id} not implemented")
         except Exception as e:

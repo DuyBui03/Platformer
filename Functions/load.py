@@ -1,6 +1,7 @@
 import pygame
 from config import PLAYER_VEL
-from sprites import load_sprite_sheets
+
+
 
 def handle_vertical_collision(player, objects, dy):
     collided_objects = []
@@ -49,6 +50,14 @@ def handle_move(player, objects):
             break
         if obj and obj.name == "fruit":
             player.score += 100
+            objects.remove(obj)
+            break
+        if obj and obj.name == "slime":
+            player.take_damage()
+            break
+        if obj and obj.name == "trophy":
+            player.score += 1000
+            player.level_completed = True
             objects.remove(obj)
             break
     if fire_collided and fire_collided != player.current_fire and not player.is_invincible:
