@@ -16,12 +16,15 @@ def create_objects(PATH):
         objects.append(Block(x, y, size))
     
     # Create Platform objects
+    # Trong hàm create_objects
     for platform_data in data['platforms']:
-        x = platform_data['x']
-        y = platform_data['y']
-        width = platform_data['width']
-        height = platform_data['height']
-        objects.append(Platform(x, y, width, height))
+        if platform_data.get('type') == 'platform':
+            x = platform_data['x']
+            y = platform_data['y']
+            width = platform_data['width']
+            height = platform_data['height']
+            can_move = platform_data.get('can_move', True)
+            objects.append(Platform(x, y, width, height, can_move))
     
     # Create Fire objects
     for fire_data in data['fire']:

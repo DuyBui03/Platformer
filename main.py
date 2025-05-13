@@ -174,6 +174,8 @@ def main():
                                 selected_level = 2
                             elif level_name == "level 3":
                                 selected_level = 3
+                            elif level_name == "level 4":
+                                selected_level = 4
                             game_state = "character_select"
                             audio.unpause_music()
 
@@ -214,7 +216,7 @@ def main():
                     if settings_button and settings_button.draw(window):
                         snapshot = window.copy()
                         game_state = "settings"
-                        
+
             if not is_paused:
                 player.loop(FPS)
                 for obj in objects:
@@ -224,6 +226,8 @@ def main():
                             obj.loop(objects)
                         except TypeError:
                             obj.loop()
+                    if hasattr(obj, "update"):
+                        obj.update() # Thêm dòng này để gọi update cho tất cả các đối tượng có phương thức update
 
                 handle_move(player, objects)
                 if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
@@ -232,7 +236,7 @@ def main():
 
                 buttons = [sound_button, settings_button] if sound_button and settings_button else []
                 draw(window, background, bg_image, player, objects, offset_x, score_text, buttons, heart_image)
-            
+
             FINAL_SCORE = player.score
             if player.rect.y > 800:
                 game_state = "game_over"

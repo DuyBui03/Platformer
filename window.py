@@ -74,7 +74,7 @@ def show_level_selection(window, font):
     window.blit(title_surf, title_rect)
 
 
-    levels = ["Level 1", "Level 2", "Level 3"]
+    levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
     buttons = []
     total_height = len(levels) * BTN_H + (len(levels)-1) * BTN_SPACING
     start_y = HEIGHT//2 - total_height//2

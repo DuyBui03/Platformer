@@ -1,4 +1,4 @@
-# game_objects.py
+# Classes/objects.py
 
 import pygame
 from sprites import get_block, load_sprite_sheets, get_platform
@@ -23,11 +23,28 @@ class Block(Object):
         self.mask = pygame.mask.from_surface(self.image)
 
 class Platform(Object):
-    def __init__(self, x, y, width, height):
-        super().__init__(x, y, width, height)
+    def __init__(self, x, y, width, height, can_move=False):
+        super().__init__(x, y, width, height, 'platform')
         platform = get_platform(width, height)
         self.image.blit(platform, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)
+        self.initial_x = x
+        self.speed = 1.2  # Tốc độ cố định cho platform di chuyển
+        self.range = 100   # Phạm vi cố định cho platform di chuyển
+        self.direction = 1
+        self.can_move = can_move
+
+    def move(self):
+        if self.can_move:
+            self.rect.x += self.speed * self.direction
+            if self.rect.x > self.initial_x + self.range:
+                self.direction = -1
+            elif self.rect.x < self.initial_x - self.range:
+                self.direction = 1
+
+    def update(self):
+        self.move()
+
 
 class Fire(Object):
     ANIMATION_DELAY = 3
@@ -56,7 +73,7 @@ class Fire(Object):
 
         if self.animation_count // self.ANIMATION_DELAY > len(sprites):
             self.animation_count = 0
-            
+
 class Trophy(Object):
     def __init__(self, x, y, width, height):
         super().__init__(x, y, width, height, 'trophy')
@@ -69,33 +86,3 @@ class Fruit(Object):
         self.fruit = load_sprite_sheets('Items', 'Fruits', width, height)
         self.image = self.fruit[fruit_type][0]
         self.mask = pygame.mask.from_surface(self.image)
-
-# Lớp MovingPlatform kế thừa Platform để hỗ trợ di chuyển
-class MovingPlatform(Platform):
-    def __init__(self, x, y, width, height, vx=0, vy=0, x_min=None, x_max=None, y_min=None, y_max=None):
-        super().__init__(x, y, width, height)
-        self.vx = vx
-        self.vy = vy
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
-
-    def loop(self):
-        """Cập nhật vị trí platform và đảo chiều khi chạm giới hạn."""
-        self.rect.x += self.vx
-        self.rect.y += self.vy
-        # Đảo chiều khi chạm x_min/x_max
-        if self.x_min is not None and self.rect.x <= self.x_min:
-            self.rect.x = self.x_min
-            self.vx = -self.vx
-        if self.x_max is not None and self.rect.x >= self.x_max - self.rect.width:
-            self.rect.x = self.x_max - self.rect.width
-            self.vx = -self.vx
-        # Đảo chiều khi chạm y_min/y_max
-        if self.y_min is not None and self.rect.y <= self.y_min:
-            self.rect.y = self.y_min
-            self.vy = -self.vy
-        if self.y_max is not None and self.rect.y >= self.y_max - self.rect.height:
-            self.rect.y = self.y_max - self.rect.height
-            self.vy = -self.vy
