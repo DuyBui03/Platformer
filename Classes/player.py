@@ -27,6 +27,7 @@ class Player(pygame.sprite.Sprite):
         self.character = character
         self.SPRITES = load_sprite_sheets("MainCharacters", self.character, 32, 32, True)
         self.score = 0
+        self.level_completed = False
         if not self.SPRITES:
             raise ValueError(f"Failed to load sprites for character: {character}")
 

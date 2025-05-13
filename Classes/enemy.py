@@ -1,10 +1,7 @@
 
 import pygame
-from os import listdir
-from os.path import isfile, join
-from Functions.load import load_sprite_sheets
 import random
-
+from sprites import load_sprite_sheets
 class Enemy(pygame.sprite.Sprite):
     COLOR = (255, 0, 0)
     GRAVITY = 1

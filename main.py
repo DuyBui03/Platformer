@@ -53,6 +53,10 @@ def draw(window, background, bg_image, player, objects, offset_x, score_text, bu
 
     pygame.display.update()
 
+def reset_player_state(selected_character):
+    """Reset player's state for a new game."""
+    return Player(100, 100, 50, 50, selected_character)
+
 def main():
     FINAL_SCORE = 0
     window = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -136,6 +140,24 @@ def main():
                         audio.toggle_mute()
                         sound_button.image = sound_off_img if audio.is_muted else sound_on_img
 
+        elif game_state == "character_select":
+            font_char = pygame.font.SysFont("arial", 30)
+            buttons = show_character_selection(window, font_char)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = event.pos
+                    for char, rect in buttons:
+                        if rect.collidepoint(pos):
+                            selected_character = char
+                            game_state = "playing"
+                            player = Player(100, 100, 50, 50, selected_character)
+                            level = Level(selected_level)
+                            objects = level.get_objects()
+                            offset_x = 0
+                            audio.unpause_music()
+                            
         elif game_state == "level_select":
             font_level = pygame.font.SysFont("arial", 30)
             buttons = show_level_selection(window, font_level)
@@ -153,24 +175,6 @@ def main():
                             elif level_name == "level 3":
                                 selected_level = 3
                             game_state = "character_select"
-                            audio.unpause_music()
-
-        elif game_state == "character_select":
-            font_char = pygame.font.SysFont("arial", 30)
-            buttons = show_character_selection(window, font_char)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    pos = event.pos
-                    for char, rect in buttons:
-                        if rect.collidepoint(pos):
-                            selected_character = char
-                            game_state = "playing"
-                            player = Player(100, 100, 50, 50, selected_character)
-                            level = Level(selected_level)  # Use selected level
-                            objects = level.get_objects()
-                            offset_x = 0
                             audio.unpause_music()
 
         elif game_state == "playing":
@@ -214,6 +218,7 @@ def main():
             if not is_paused:
                 player.loop(FPS)
                 for obj in objects:
+                    print(f"Object: {obj.name}, Position: {obj.rect.topleft}")
                     if hasattr(obj, "loop"):
                         try:
                             obj.loop(objects)
@@ -221,28 +226,6 @@ def main():
                             obj.loop()
 
                 handle_move(player, objects)
-
-                # Check collisions with Fruit and Trophy
-                for obj in objects[:]:
-                    if isinstance(obj, Trophy):
-                        trophy_rect = obj.rect.move(-offset_x, 0)
-                        if player.rect.colliderect(trophy_rect):
-                            game_state = "win"
-                            snapshot = window.copy()
-                            audio.pause_music()
-                            # Update high score
-                            level_key = f"level_{selected_level}"
-                            if player.score > high_scores.get(level_key, 0):
-                                high_scores[level_key] = player.score
-                                save_high_scores(high_scores)
-                            break
-                    elif isinstance(obj, Fruit):
-                        fruit_rect = obj.rect.move(-offset_x, 0)
-                        if player.rect.colliderect(fruit_rect):
-                            player.score += 10
-                            objects.remove(obj)
-
-                # Update camera
                 if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
                     (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
                     offset_x += player.x_vel
@@ -260,7 +243,15 @@ def main():
                 if player.score > high_scores.get(level_key, 0):
                     high_scores[level_key] = player.score
                     save_high_scores(high_scores)
-
+            if player.level_completed:
+                game_state = "win"
+                snapshot = window.copy()
+                audio.pause_music()
+                level_key = f"level_{selected_level}"
+                if player.score > high_scores.get(level_key, 0):
+                    high_scores[level_key] = player.score
+                    save_high_scores(high_scores)
+                
         elif game_state == "settings":
             buttons_settings = show_settings(window, font, snapshot)
             for event in pygame.event.get():
@@ -301,14 +292,15 @@ def main():
                         if rect.collidepoint(pos):
                             if name == "restart":
                                 game_state = "level_select"  # Return to level select
+                                player = reset_player_state(selected_character)  # Reset player state
                             elif name == "menu":
                                 game_state = "menu"
+                                player = reset_player_state(selected_character)  # Reset player state
                             elif name == "exit":
                                 run = False
 
         elif game_state == "win":
-            audio.pause_music()
-            buttons_win = show_win_menu(window, font, 100, snapshot)
+            buttons_win = show_win_menu(window, font, player.score, snapshot)  # Use player's actual score
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -318,8 +310,10 @@ def main():
                         if rect.collidepoint(pos):
                             if name == "restart":
                                 game_state = "level_select"  # Return to level select
+                                player = reset_player_state(selected_character)  # Reset player state
                             elif name == "menu":
                                 game_state = "menu"
+                                player = reset_player_state(selected_character)  # Reset player state
                             elif name == "exit":
                                 run = False
 
