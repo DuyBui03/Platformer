@@ -1,5 +1,4 @@
-from Level.lv1 import create_objects
-from Level.level_2 import create_objects as create_objects_lv2
+from Level.level import create_objects
 class Level:
     def __init__(self, level_id):
         self.level_id = level_id
@@ -7,11 +6,17 @@ class Level:
 
     def load_objects(self):
         """Tải danh sách đối tượng cho level dựa trên level_id."""
+        PATH_1 = r'C:\Users\longc\project\Platformer\Level\JsonLevel\level_1.json'
+        PATH_2 = r'C:\Users\longc\project\Platformer\Level\JsonLevel\level_2.json'
+        PATH_3 = r'C:\Users\longc\project\Platformer\Level\JsonLevel\level_3.json'
+        # PATH_4 = r'C:\Users\longc\project\Platformer\Level\JsonLevel\level4.json'
         try:
             if self.level_id == 1:
-                return create_objects()
+                return create_objects(PATH_1)
             elif self.level_id == 2:
-                return create_objects_lv2()
+                return create_objects(PATH_2)
+            elif self.level_id == 3:
+                return create_objects(PATH_3)
             else:
                 raise ValueError(f"Level {self.level_id} not implemented")
         except Exception as e:

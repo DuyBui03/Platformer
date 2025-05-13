@@ -2,8 +2,8 @@ import json
 from Classes.objects import Block, Platform, Fire, Trophy, Fruit
 from Classes.enemy import Slime
 
-def create_objects():
-    with open(r'C:\Users\longc\project\Platformer\Level\JsonLevel\level_2.json', 'r') as f:
+def create_objects(PATH):
+    with open(PATH, 'r') as f:
         data = json.load(f)
     
     objects = []
@@ -29,7 +29,7 @@ def create_objects():
         y = fire_data['y']
         width = fire_data['width'] // 2
         height = fire_data['height'] // 2
-        fire = Fire(x, y, width, height)  # Lưu đối tượng Fire vào biến
+        fire = Fire(x, y, width, height)
         fire.on()
         objects.append(fire)
     
